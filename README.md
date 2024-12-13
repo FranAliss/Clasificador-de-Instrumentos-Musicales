@@ -1,7 +1,7 @@
 
 # Instrument Classifier App
 
-This application allows you to classify audio files by musical instruments using a deep learning model.
+This application allows you to classify audio files by musical instruments.
 
 ## System Requirements
 - **Operating System:** Windows, macOS, or Linux
