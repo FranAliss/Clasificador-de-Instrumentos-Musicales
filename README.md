@@ -13,28 +13,20 @@ This application allows you to classify audio files by musical instruments using
 ### 1. Clone the Repository
 Download or clone this repository:  
 ```bash
-git clone <URL_OF_REPOSITORY>
+git clone https://github.com/FranAliss/proyecto_de_grado.git
 cd InstrumentClassifierApp
 ```
 
-### 2. Set Up Virtual Environment
-Create and activate a virtual environment to avoid dependency conflicts:  
-```bash
-python -m venv env
-source env/bin/activate  # On Linux/MacOS
-env\Scripts\activate   # On Windows
-```
-
-### 3. Install Dependencies
+### 2. Install Dependencies
 Install all required Python libraries:  
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Pretrained Model
+### 3. Pretrained Model
 Ensure the pretrained model file exists in the `models/` directory. The file should be named `instrument_classifier_cross_validated.keras`.
 
-### 5. Run the Application
+### 4. Run the Application
 Run the application from the main file:  
 ```bash
 python main.py
@@ -50,7 +42,7 @@ InstrumentClassifierApp/
 |   ├── main.py
 │   ├── gui/
 |       └── gui.py
-|   ├── utils/
+|   └── utils/
 |       └── audio_preprocessor.py
 |       └── file_processor.py
 |       └── instrument_classifier.py
