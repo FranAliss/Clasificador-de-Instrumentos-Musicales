@@ -69,4 +69,3 @@ tk
 
 ## Additional Notes
 - Ensure that the audio files to classify are in `.wav` format.
-- The application will create a destination folder where the classified files will be renamed and organized.
