@@ -179,3 +179,4 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Cancelado", "El proceso ha sido cancelado.")
             self.progress_bar.hide()
             self.btn_cancel.hide()
+            self.file_list.clear()
