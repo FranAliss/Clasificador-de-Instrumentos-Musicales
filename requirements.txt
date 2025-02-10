@@ -2,4 +2,4 @@
 numpy
 librosa
 tensorflow
-tk
+PyQt5
