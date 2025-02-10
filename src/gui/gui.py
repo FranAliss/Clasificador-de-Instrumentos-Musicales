@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QIcon, QDragEnterEvent, QDropEvent
 from utils.file_processor import FileProcessor
+from PyQt5 import QtGui
 
 PRIMARY_COLOR = "#1F1F1F"
 SECONDARY_COLOR = "#2C2C2C"
@@ -50,18 +51,16 @@ class FileProcessorThread(QThread):
 class MainWindow(QMainWindow):
     def __init__(self, classifier):
         super().__init__()
+        self.setWindowIcon(QtGui.QIcon('Aliss sf.png'))
         self.file_paths = []
         self.processor = FileProcessor(classifier)
         self.thread = None
-
         self.init_ui()
 
     def init_ui(self):
-        self.setWindowTitle("Clasificador de Instrumentos Musicales")
-        self.setFixedSize(520, 450)
+        self.setWindowTitle("Clasificador de instrumentos musicales")
+        self.setFixedSize(600, 450)
         self.setStyleSheet(f"background-color: {PRIMARY_COLOR}; color: {TEXT_COLOR};")
-        self.setWindowIcon(QIcon('icon.ico'))
-
         self.setAcceptDrops(True)
 
         self.tabs = QTabWidget()
@@ -82,7 +81,7 @@ class MainWindow(QMainWindow):
 
         self.file_list = QListWidget()
         self.file_list.setStyleSheet(f"background-color: {SECONDARY_COLOR}; color: {TEXT_COLOR};")
-        self.file_list.setFixedSize(260, 330)
+        self.file_list.setFixedSize(300, 330)
 
         btn_select_files = QPushButton("Seleccionar Archivos")
         btn_select_files.clicked.connect(self.select_files)
@@ -91,7 +90,7 @@ class MainWindow(QMainWindow):
         self.destination_label = QLabel("Destino: No seleccionado")
         btn_select_destination = QPushButton("Seleccionar Destino")
         btn_select_destination.clicked.connect(self.select_destination)
-        btn_select_destination.setStyleSheet(f"QPushButton {{ background-color: {BUTTON_COLOR}; color: {TEXT_COLOR}; }} QPushButton:hover {{ background-color: {HIGHLIGHT_COLOR}; }}")
+        btn_select_destination.setStyleSheet(f"QPushButton {{ background-color: {BUTTON_COLOR}; color: {TEXT_COLOR}; }} QPushButton:hover {{ background-color: {HIGHLIGHT_COLOR}; }}") 
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setStyleSheet(f"QProgressBar {{ text-align: center; color: black; }} QProgressBar::chunk {{ background-color: {ACCENT_COLOR}; }}")
