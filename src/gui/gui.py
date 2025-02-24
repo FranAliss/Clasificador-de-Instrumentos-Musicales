@@ -1,182 +1,197 @@
 import os
-import sys
 import re
-from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QListWidget, QPushButton, QLabel, QFileDialog, QMessageBox,
-    QProgressBar, QTabWidget, QFrame
-)
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QIcon, QDragEnterEvent, QDropEvent
+import threading
+import time
+import json
+import customtkinter as ctk
+from tkinter import filedialog, messagebox, PhotoImage
 from utils.file_processor import FileProcessor
-from PyQt5 import QtGui
 
-PRIMARY_COLOR = "#1F1F1F"
-SECONDARY_COLOR = "#2C2C2C"
-ACCENT_COLOR = "#3A99D9"
-TEXT_COLOR = "#FFFFFF"
-BUTTON_COLOR = "#444444"
-HIGHLIGHT_COLOR = "#555555"
-TAB_ACTIVE_COLOR = "#3A99D9"
-TAB_INACTIVE_COLOR = "#2C2C2C"
+ctk.set_appearance_mode("Dark")
+ctk.set_default_color_theme("blue")
 
-class FileProcessorThread(QThread):
-    progress = pyqtSignal(int)
-    completed = pyqtSignal()
-    error = pyqtSignal(str)
+PRIMARY_COLOR = "#000000"
+TEXT_COLOR = "#E5E7EB"
 
-    def __init__(self, file_paths, destination, processor):
-        super().__init__()
-        self.file_paths = file_paths
-        self.destination = destination
-        self.processor = processor
-        self.cancel_flag = False
+CONFIG_FILE = os.path.join(os.getenv("APPDATA"), "instrument_classifier", "config.json")
 
-    def run(self):
-        try:
-            total_files = len(self.file_paths)
-            for i, file_path in enumerate(self.file_paths):
-                if self.cancel_flag:
-                    return
-                self.processor.process(file_path, self.destination)
-                self.progress.emit(int(((i + 1) / total_files) * 100))
-            self.completed.emit()
-        except Exception as e:
-            self.error.emit(str(e))
-
-    def cancel(self):
-        self.cancel_flag = True
-
-
-class MainWindow(QMainWindow):
+class MainWindow(ctk.CTk):
     def __init__(self, classifier):
         super().__init__()
-        self.setWindowIcon(QtGui.QIcon('Aliss sf.png'))
+        self.title("Clasificador de instrumentos musicales")
+        self.geometry("600x430")
+        self.minsize(530, 400)
+        self.configure(bg=PRIMARY_COLOR)
+
         self.file_paths = []
-        self.processor = FileProcessor(classifier)
-        self.thread = None
+        self.destination_path = None
+        self.load_config()
+        self.processor = FileProcessor(classifier, self.config)
         self.init_ui()
 
+    def create_circular_loader(self):
+        """Creates and starts a circular loader animation"""
+        def animate():
+            if self.loader_running:
+                self.angle = (self.angle + 10) % 360
+                self.canvas.itemconfig(self.loader_arc, start=self.angle)
+                self.after(30, animate)  # Schedule next frame
+
+        self.canvas.delete("all")
+
+        self.angle = 0
+        self.loader_running = True
+        self.loader_arc = self.canvas.create_arc(
+            5, 5, 45, 45,
+            start=self.angle, extent=90,
+            outline="cyan", width=5, style="arc"
+        )
+
+        animate()
+
+    def stop_circular_loader(self):
+        """Stops the circular loader animation"""
+        self.loader_running = False
+        self.canvas.delete("all")
+    
+    def load_config(self):
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, "r") as file:
+                self.config = json.load(file)
+        else:
+            self.config = {"naming_pattern": "instrumento_#"}
+    
+    def save_config(self):
+        with open(CONFIG_FILE, "w") as file:
+            json.dump(self.config, file)
+    
     def init_ui(self):
-        self.setWindowTitle("Clasificador de instrumentos musicales")
-        self.setFixedSize(600, 450)
-        self.setStyleSheet(f"background-color: {PRIMARY_COLOR}; color: {TEXT_COLOR};")
-        self.setAcceptDrops(True)
-
-        self.tabs = QTabWidget()
-        self.tabs.setStyleSheet(f"QTabBar::tab {{ background: {TAB_INACTIVE_COLOR}; color: {TEXT_COLOR}; padding: 10px; }} QTabBar::tab:selected {{ background: {TAB_ACTIVE_COLOR}; }}")
-        self.setCentralWidget(self.tabs)
-
-        self.main_tab = QWidget()
-        self.settings_tab = QWidget()
-
-        self.tabs.addTab(self.main_tab, "Principal")
-        self.tabs.addTab(self.settings_tab, "Configuración")
-
+        self.tabs = ctk.CTkTabview(self, width=680, height=480)
+        self.tabs.pack(pady=10, padx=10)
+        
+        self.main_tab = self.tabs.add("Principal")
+        self.settings_tab = self.tabs.add("Configuración")
+        self.about_tab = self.tabs.add("Acerca de")
+        
         self.create_main_tab()
         self.create_settings_tab()
-
+        self.create_about_tab()
+    
     def create_main_tab(self):
-        layout = QHBoxLayout()
-
-        self.file_list = QListWidget()
-        self.file_list.setStyleSheet(f"background-color: {SECONDARY_COLOR}; color: {TEXT_COLOR};")
-        self.file_list.setFixedSize(300, 330)
-
-        btn_select_files = QPushButton("Seleccionar Archivos")
-        btn_select_files.clicked.connect(self.select_files)
-        btn_select_files.setStyleSheet(f"QPushButton {{ background-color: {BUTTON_COLOR}; color: {TEXT_COLOR}; }} QPushButton:hover {{ background-color: {HIGHLIGHT_COLOR}; }}")
-
-        self.destination_label = QLabel("Destino: No seleccionado")
-        btn_select_destination = QPushButton("Seleccionar Destino")
-        btn_select_destination.clicked.connect(self.select_destination)
-        btn_select_destination.setStyleSheet(f"QPushButton {{ background-color: {BUTTON_COLOR}; color: {TEXT_COLOR}; }} QPushButton:hover {{ background-color: {HIGHLIGHT_COLOR}; }}") 
-
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setStyleSheet(f"QProgressBar {{ text-align: center; color: black; }} QProgressBar::chunk {{ background-color: {ACCENT_COLOR}; }}")
-        self.progress_bar.setValue(0)
-        self.progress_bar.hide()
-
-        btn_process = QPushButton("Renombrar y Guardar")
-        btn_process.clicked.connect(self.start_processing)
-        btn_process.setStyleSheet(f"QPushButton {{ background-color: {BUTTON_COLOR}; color: {TEXT_COLOR}; }} QPushButton:hover {{ background-color: {HIGHLIGHT_COLOR}; }}")
-
-        self.btn_cancel = QPushButton("Cancelar")
-        self.btn_cancel.clicked.connect(self.cancel_processing)
-        self.btn_cancel.setStyleSheet(f"QPushButton {{ background-color: {BUTTON_COLOR}; color: {TEXT_COLOR}; }} QPushButton:hover {{ background-color: {HIGHLIGHT_COLOR}; }}")
-        self.btn_cancel.hide()
-
-        left_layout = QVBoxLayout()
-        left_layout.addWidget(QLabel("Archivos seleccionados:"))
-        left_layout.addWidget(self.file_list)
-        left_layout.addWidget(btn_select_files)
-
-        right_layout = QVBoxLayout()
-        right_layout.addWidget(self.destination_label)
-        right_layout.addWidget(btn_select_destination)
-        right_layout.addWidget(btn_process)
-        right_layout.addWidget(self.progress_bar)
-        right_layout.addWidget(self.btn_cancel)
-
-        layout.addLayout(left_layout, 2)
-        layout.addLayout(right_layout, 1)
-
-        self.main_tab.setLayout(layout)
-
+        frame_left = ctk.CTkFrame(self.main_tab)
+        frame_left.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+        
+        self.file_list = ctk.CTkTextbox(frame_left, height=200, width=300)
+        self.file_list.pack(pady=10)
+        
+        btn_select_files = ctk.CTkButton(frame_left, text="Seleccionar Archivos", command=self.select_files)
+        btn_select_files.pack(pady=5)
+        
+        btn_clear_files = ctk.CTkButton(frame_left, text="Limpiar Lista", command=self.clear_file_list)
+        btn_clear_files.pack(pady=5)
+        
+        frame_right = ctk.CTkFrame(self.main_tab)
+        frame_right.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+        
+        self.destination_label = ctk.CTkLabel(frame_right, text="Destino: No seleccionado", text_color=TEXT_COLOR)
+        self.destination_label.pack(pady=5)
+        
+        btn_select_destination = ctk.CTkButton(frame_right, text="Seleccionar Destino", command=self.select_destination)
+        btn_select_destination.pack(pady=5)
+        
+        btn_process = ctk.CTkButton(frame_right, text="Renombrar y Guardar", command=self.start_processing)
+        btn_process.pack(pady=5)
+        
+        self.progress_bar = ctk.CTkProgressBar(frame_right, width=250)
+        self.progress_bar.pack(pady=5)
+        self.progress_bar.set(0)
+        
+        self.canvas = ctk.CTkCanvas(frame_right, width=50, height=50, highlightthickness=0, bg=self.main_tab._fg_color)
+        self.canvas.pack(pady=5)        
+        self.canvas.pack()
+    
     def create_settings_tab(self):
-        layout = QVBoxLayout()
-        label = QLabel("Configuración")
-        label.setStyleSheet(f"font-size: 18px; font-weight: bold; background-color: {PRIMARY_COLOR}; color: {TEXT_COLOR};")
-        layout.addWidget(label)
-        self.settings_tab.setLayout(layout)
-
-    def dragEnterEvent(self, event: QDragEnterEvent):
-        if event.mimeData().hasUrls():
-            event.acceptProposedAction()
-
-    def dropEvent(self, event: QDropEvent):
-        for url in event.mimeData().urls():
-            path = url.toLocalFile()
-            if path.endswith(".wav"):
-                self.file_list.addItem(os.path.basename(path))
-                self.file_paths.append(path)
-
+        frame_settings = ctk.CTkFrame(self.settings_tab)
+        frame_settings.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        self.naming_label = ctk.CTkLabel(frame_settings, text="Formato de nombres:", text_color=TEXT_COLOR)
+        self.naming_label.pack(pady=5)
+        
+        self.naming_entry = ctk.CTkEntry(frame_settings, width=250)
+        self.naming_entry.insert(0, self.config["naming_pattern"])
+        self.naming_entry.pack(pady=5)
+        
+        btn_save_settings = ctk.CTkButton(frame_settings, text="Guardar Configuración", command=self.update_naming_pattern)
+        btn_save_settings.pack(pady=5)
+        
+        btn_reset_settings = ctk.CTkButton(frame_settings, text="Restablecer Configuración", command=self.reset_naming_pattern)
+        btn_reset_settings.pack(pady=5)
+    
+    def update_naming_pattern(self):
+        self.config["naming_pattern"] = self.naming_entry.get()
+        self.save_config()
+        self.processor.update_config(self.config)
+    
+    def reset_naming_pattern(self):
+        self.config["naming_pattern"] = "instrumento_#"
+        self.naming_entry.delete(0, "end")
+        self.naming_entry.insert(0, self.config["naming_pattern"])
+        self.save_config()
+        self.processor.update_config(self.config)
+    
+    def create_about_tab(self):
+        frame_about = ctk.CTkFrame(self.about_tab)
+        frame_about.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        about_text = """Clasificador de Instrumentos Musicales\n\nEsta aplicación utiliza un modelo de IA para identificar \ndiferentes instrumentos en archivos de audio y \nrenombrarlos automáticamente."""
+        
+        label_about = ctk.CTkLabel(frame_about, text=about_text, text_color=TEXT_COLOR)
+        label_about.pack(pady=10)
+    
     def select_files(self):
-        files, _ = QFileDialog.getOpenFileNames(self, "Selecciona archivos WAV", "", "Archivos WAV (*.wav)")
+        files = filedialog.askopenfilenames(filetypes=[("Archivos WAV", "*.wav")])
         if files:
-            self.file_list.addItems([os.path.basename(f) for f in files])
             self.file_paths.extend(files)
-
+            self.file_list.insert("end", "\n".join(os.path.basename(f) for f in files) + "\n")
+    
+    def clear_file_list(self):
+        self.file_list.delete("1.0", "end")
+        self.file_paths.clear()
+    
     def select_destination(self):
-        destination = QFileDialog.getExistingDirectory(self, "Selecciona el destino")
+        destination = filedialog.askdirectory()
         if destination:
             short_path = re.split(r'[/\\]', destination)[-1]
-            self.destination_label.setText(f"Destino: ../{short_path}")
+            self.destination_label.configure(text=f"Destino: {short_path}")
             self.destination_path = destination
-
+    
     def start_processing(self):
-        if not self.file_paths or not hasattr(self, 'destination_path'):
-            QMessageBox.warning(self, "Advertencia", "Selecciona archivos y destino.")
+        if not self.file_paths or not self.destination_path:
+            messagebox.showwarning("Advertencia", "Selecciona archivos y destino.")
             return
-
-        self.progress_bar.show()
-        self.btn_cancel.show()
-        self.thread = FileProcessorThread(self.file_paths, self.destination_path, self.processor)
-        self.thread.progress.connect(self.progress_bar.setValue)
-        self.thread.completed.connect(self.processing_completed)
-        self.thread.error.connect(lambda e: QMessageBox.critical(self, "Error", e))
-        self.thread.start()
-
-    def processing_completed(self):
+        
+        self.progress_bar.set(0)
+        self.process_thread = threading.Thread(target=self.process_files)
+        self.process_thread.start()
+    
+    def process_files(self):
+        total_files = len(self.file_paths)
+        self.create_circular_loader()
+        
+        for i, file_path in enumerate(self.file_paths, start=1):
+            new_name = self.processor.process(file_path, self.destination_path)
+            progress = i / total_files
+            
+            for _ in range(10):
+                time.sleep(0.1)
+                self.progress_bar.set(progress - 0.1 + (_ * 0.01))
+                self.update_idletasks()
+            
+        self.stop_circular_loader()
+        
+        self.progress_bar.set(1)
+        messagebox.showinfo("Procesamiento", "Proceso completado.")
+        self.file_list.delete("1.0", "end")
+        self.file_paths.clear()
         os.startfile(self.destination_path)
-        self.progress_bar.hide()
-        self.btn_cancel.hide()
-        self.file_list.clear()
-
-    def cancel_processing(self):
-        if self.thread:
-            self.thread.cancel()
-            QMessageBox.information(self, "Cancelado", "El proceso ha sido cancelado.")
-            self.progress_bar.hide()
-            self.btn_cancel.hide()
-            self.file_list.clear()
+        self.progress_bar.set(0)
