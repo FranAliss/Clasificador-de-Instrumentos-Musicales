@@ -81,14 +81,14 @@ class MainWindow(ctk.CTk):
         frame_left = ctk.CTkFrame(self.main_tab)
         frame_left.pack(side="left", fill="both", expand=True, padx=10, pady=10)
         
-        self.file_list = ctk.CTkTextbox(frame_left, height=200, width=300)
+        self.file_list = ctk.CTkTextbox(frame_left, height=200, width=300, state="disabled")
         self.file_list.pack(pady=10)
         
         btn_select_files = ctk.CTkButton(frame_left, text="Seleccionar Archivos", command=self.select_files)
         btn_select_files.pack(pady=5)
         
-        btn_clear_files = ctk.CTkButton(frame_left, text="Limpiar Lista", command=self.clear_file_list)
-        btn_clear_files.pack(pady=5)
+        self.btn_clear_files = ctk.CTkButton(frame_left, text="Limpiar Lista", state="disabled", command=self.clear_file_list)
+        self.btn_clear_files.pack(pady=5)
         
         frame_right = ctk.CTkFrame(self.main_tab)
         frame_right.pack(side="right", fill="both", expand=True, padx=10, pady=10)
@@ -99,8 +99,8 @@ class MainWindow(ctk.CTk):
         btn_select_destination = ctk.CTkButton(frame_right, text="Seleccionar Destino", command=self.select_destination)
         btn_select_destination.pack(pady=5)
         
-        btn_process = ctk.CTkButton(frame_right, text="Renombrar y Guardar", command=self.start_processing)
-        btn_process.pack(pady=5)
+        self.btn_process = ctk.CTkButton(frame_right, text="Renombrar y Guardar", state="disabled", command=self.start_processing)
+        self.btn_process.pack(pady=5)
         
         self.progress_bar = ctk.CTkProgressBar(frame_right, width=250)
         self.progress_bar.pack(pady=5)
@@ -152,7 +152,10 @@ class MainWindow(ctk.CTk):
         files = filedialog.askopenfilenames(filetypes=[("Archivos WAV", "*.wav")])
         if files:
             self.file_paths.extend(files)
+            self.file_list.configure(state="normal")
             self.file_list.insert("end", "\n".join(os.path.basename(f) for f in files) + "\n")
+            self.file_list.configure(state="disabled")
+            self.btn_clear_files.configure(state="normal")
     
     def clear_file_list(self):
         self.file_list.delete("1.0", "end")
@@ -164,10 +167,11 @@ class MainWindow(ctk.CTk):
             short_path = re.split(r'[/\\]', destination)[-1]
             self.destination_label.configure(text=f"Destino: {short_path}")
             self.destination_path = destination
+            self.btn_process.configure(state="normal")
     
     def start_processing(self):
         if not self.file_paths or not self.destination_path:
-            messagebox.showwarning("Advertencia", "Selecciona archivos y destino.")
+            messagebox.showwarning("Advertencia", "No hay archivos seleccionados.")
             return
         
         self.progress_bar.set(0)
@@ -191,7 +195,11 @@ class MainWindow(ctk.CTk):
         
         self.progress_bar.set(1)
         messagebox.showinfo("Procesamiento", "Proceso completado.")
+        self.file_list.configure(state="normal")
         self.file_list.delete("1.0", "end")
+        self.file_list.configure(state="disabled")
         self.file_paths.clear()
         os.startfile(self.destination_path)
         self.progress_bar.set(0)
+        self.btn_process.configure(state="disabled")
+        self.btn_clear_files.configure(state="disabled")
