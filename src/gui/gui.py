@@ -13,7 +13,11 @@ ctk.set_default_color_theme("blue")
 PRIMARY_COLOR = "#000000"
 TEXT_COLOR = "#E5E7EB"
 
-CONFIG_FILE = os.path.join(os.getenv("APPDATA"), "config.json")
+APPDATA_PATH = os.path.join(os.getenv("APPDATA"), "ClasificadorInstrumentos")
+
+os.makedirs(APPDATA_PATH, exist_ok=True)
+
+CONFIG_FILE = os.path.join(APPDATA_PATH, "config.json")
 
 class MainWindow(ctk.CTk):
     def __init__(self, classifier):
@@ -33,8 +37,8 @@ class MainWindow(ctk.CTk):
             with open(CONFIG_FILE, "r") as file:
                 self.config = json.load(file)
         else:
-            self.config = {"project_name": "",
-                "instrument_labels":{"Acoustic Guitar":"Acoustic Guitar", 
+            self.config = {"instrument_labels":
+                                    {"Acoustic Guitar":"Acoustic Guitar", 
                                     "Bass":"Bass", 
                                     "Drums":"Drums", 
                                     "Electric Guitar":"Electric Guitar", 
@@ -193,17 +197,22 @@ class MainWindow(ctk.CTk):
             json.dump(self.config, config_file, indent=4)
     
     def reset_naming_pattern(self):
-        self.config = {"instrument_labels":{"Acoustic Guitar":"Acoustic Guitar", 
-                                                "Bass":"Bass", 
-                                                "Drums":"Drums", 
-                                                "Electric Guitar":"Electric Guitar", 
-                                                "Piano":"Piano"}}
-
+        # Restore default config values
+        self.config["instrument_labels"] = {
+            "Acoustic Guitar": "Acoustic Guitar",
+            "Bass": "Bass",
+            "Drums": "Drums",
+            "Electric Guitar": "Electric Guitar",
+            "Piano": "Piano"
+        }
         for key, label_text in self.config["instrument_labels"].items():
-            self.entry.insert(0, label_text)
-
+            if key in self.naming_entries:
+                self.naming_entries[key].delete(0, "end")
+                self.naming_entries[key].insert(0, label_text)
         self.save_config()
         self.processor.update_config(self.config)
+        self.update_naming_pattern()
+
     
     def create_about_tab(self):
         frame_about = ctk.CTkFrame(self.about_tab)
