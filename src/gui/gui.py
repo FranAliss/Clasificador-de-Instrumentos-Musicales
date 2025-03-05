@@ -3,9 +3,11 @@ import re
 import threading
 import time
 import json
+import sys
 import customtkinter as ctk
 from tkinter import filedialog, messagebox, PhotoImage
 from utils.file_processor import FileProcessor
+from PIL import Image
 
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
@@ -24,7 +26,7 @@ class MainWindow(ctk.CTk):
         super().__init__()
         self.title("Clasificador de instrumentos musicales")
         self.geometry("700x430")
-        self.minsize(650, 420)
+        self.minsize(690, 420)
         self.maxsize(800,500)
         self.configure(bg=PRIMARY_COLOR)
 
@@ -213,16 +215,81 @@ class MainWindow(ctk.CTk):
         self.processor.update_config(self.config)
         self.update_naming_pattern()
 
-    
     def create_about_tab(self):
-        frame_about = ctk.CTkFrame(self.about_tab)
+        frame_about = ctk.CTkScrollableFrame(self.about_tab)
         frame_about.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # --- Sección 1: Tutorial de Usuario ---
+        frame_tutorial = ctk.CTkFrame(frame_about, fg_color="gray20")
+        frame_tutorial.pack(fill="x", pady=10, padx=5)
+
+        label_tutorial = ctk.CTkLabel(frame_tutorial, text="📖 Tutorial de Usuario", font=("Arial", 14, "bold"))
+        label_tutorial.pack(pady=5)
+
+        if getattr(sys, 'frozen', False):
+            BASE_DIR = sys._MEIPASS
+        else:
+            BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+        IMG_DIR = os.path.join(BASE_DIR, "img")
+
+        tutorial_steps = [
+            ("1. Selecciona los archivos de audio.", os.path.join(IMG_DIR, "step1.png")),
+            ("2. Especifica la carpeta de destino.", os.path.join(IMG_DIR, "step2.png")),
+            ("3. Ingresa el nombre del proyecto (opcional).", os.path.join(IMG_DIR, "step3.png")),
+            ("4. Presiona 'Renombrar y Guardar'.", os.path.join(IMG_DIR, "step4.png"))
+        ]
+
+        for step_text, image_file in tutorial_steps:
+            label_step = ctk.CTkLabel(frame_tutorial, text=step_text, justify="left", wraplength=400)
+            label_step.pack(pady=2)
+            img = ctk.CTkImage(light_image=Image.open(image_file), size=(500, 300))
+            img_label = ctk.CTkLabel(frame_tutorial, image=img, text="")
+            img_label.pack(pady=5)
+
+        # --- Sección 2: Información sobre el Modelo ---
+        frame_model_info = ctk.CTkFrame(frame_about, fg_color="gray20")
+        frame_model_info.pack(fill="x", pady=10, padx=5)
+
+        label_model = ctk.CTkLabel(frame_model_info, text="🎵 Información del Modelo", font=("Arial", 14, "bold"))
+        label_model.pack(pady=5)
+
+        results_text = """El modelo cuenta con una precisión del 98% (promedio aritmético y ponderado):"""
+        label_model_results = ctk.CTkLabel(frame_model_info, text=results_text, justify="left", wraplength=400)
+        label_model_results.pack(pady=5)
+        model_image_results = ctk.CTkImage(light_image=Image.open(os.path.join(IMG_DIR, "results.png")), size=(300, 175))
+        results_img_label = ctk.CTkLabel(frame_model_info, image=model_image_results, text="")
+        results_img_label.pack(pady=5)
+
+        confusion_text = """Matriz de confusión de la clasificación del modelo con datos nuevos:"""
+        label_model_confusion = ctk.CTkLabel(frame_model_info, text=confusion_text, justify="left", wraplength=400)
+        label_model_confusion.pack(pady=5)
+        model_image_confusion = ctk.CTkImage(light_image=Image.open(os.path.join(IMG_DIR, "confusion.png")), size=(400, 350))
+        confusion_img_label = ctk.CTkLabel(frame_model_info, image=model_image_confusion, text="")
+        confusion_img_label.pack(pady=5)
+
+        train_text = """Gráficas del entrenamiento del modelo:"""
+        label_model_train = ctk.CTkLabel(frame_model_info, text=train_text, justify="left", wraplength=400)
+        label_model_train.pack(pady=5)
+        model_image_train = ctk.CTkImage(light_image=Image.open(os.path.join(IMG_DIR, "train.png")), size=(500, 250))
+        train_img_label = ctk.CTkLabel(frame_model_info, image=model_image_train, text="")
+        train_img_label.pack(pady=5)
+
+        info_text = """El modelo utilizado en la aplicación cuenta con un elevado porcentaje de precisión. La matriz de confusión muestra el desempeño del modelo para cada instrumento y las gráficas de entrenamiento muestran convergencia y ausencia de sobre-entrenamiento. Aún así, es importante recalcar que el modelo no es perfecto y puede fallar en ocasiones."""
+        label_model_info = ctk.CTkLabel(frame_model_info, text=info_text, justify="left", wraplength=400)
+        label_model_info.pack(pady=5)
+        # --- Sección 3: Información General y Enlaces ---
+        frame_general_info = ctk.CTkFrame(frame_about, fg_color="gray20")
+        frame_general_info.pack(fill="x", pady=10, padx=5)
+
+        label_general = ctk.CTkLabel(frame_general_info, text="ℹ️ Información General", font=("Arial", 14, "bold"))
+        label_general.pack(pady=5)
+
+        general_text = """Desarrollado por Francisco Gabriel Aliss Arteaga.\nContacto: franalissar@gmail.com"""
         
-        about_text = """Clasificador de Instrumentos Musicales\n\nEsta aplicación utiliza un modelo de IA para identificar \ndiferentes instrumentos en archivos de audio y \nrenombrarlos automáticamente."""
-        
-        label_about = ctk.CTkLabel(frame_about, text=about_text, text_color=TEXT_COLOR)
-        label_about.pack(pady=10)
-    
+        label_general_text = ctk.CTkLabel(frame_general_info, text=general_text, justify="left", wraplength=400)
+        label_general_text.pack(pady=5)
+
     def select_files(self):
         files = filedialog.askopenfilenames(filetypes=[("Archivos WAV", "*.wav")])
         if files:
