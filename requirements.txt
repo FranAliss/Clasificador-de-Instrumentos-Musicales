@@ -2,4 +2,4 @@
 numpy
 librosa
 tensorflow
-PyQt5
+customtkinter

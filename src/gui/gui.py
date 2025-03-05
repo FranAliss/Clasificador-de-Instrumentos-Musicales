@@ -13,14 +13,15 @@ ctk.set_default_color_theme("blue")
 PRIMARY_COLOR = "#000000"
 TEXT_COLOR = "#E5E7EB"
 
-CONFIG_FILE = os.path.join(os.getenv("APPDATA"), "instrument_classifier", "config.json")
+CONFIG_FILE = os.path.join(os.getenv("APPDATA"), "config.json")
 
 class MainWindow(ctk.CTk):
     def __init__(self, classifier):
         super().__init__()
         self.title("Clasificador de instrumentos musicales")
-        self.geometry("600x430")
-        self.minsize(530, 400)
+        self.geometry("700x430")
+        self.minsize(650, 420)
+        self.maxsize(800,500)
         self.configure(bg=PRIMARY_COLOR)
 
         self.file_paths = []
@@ -28,21 +29,33 @@ class MainWindow(ctk.CTk):
         self.load_config()
         self.processor = FileProcessor(classifier, self.config)
         self.init_ui()
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, "r") as file:
+                self.config = json.load(file)
+        else:
+            self.config = {"project_name": "",
+                "instrument_labels":{"Acoustic Guitar":"Acoustic Guitar", 
+                                    "Bass":"Bass", 
+                                    "Drums":"Drums", 
+                                    "Electric Guitar":"Electric Guitar", 
+                                    "Piano":"Piano"}}
+            with open(CONFIG_FILE, "w") as file:
+                json.dump(self.config, file, indent=4)
 
     def create_circular_loader(self):
-        """Creates and starts a circular loader animation"""
         def animate():
             if self.loader_running:
                 self.angle = (self.angle + 10) % 360
                 self.canvas.itemconfig(self.loader_arc, start=self.angle)
-                self.after(30, animate)  # Schedule next frame
+                self.after(30, animate)
 
-        self.canvas.delete("all")
+        if self.canvas:
+            self.canvas.delete("all")
 
         self.angle = 0
         self.loader_running = True
         self.loader_arc = self.canvas.create_arc(
-            5, 5, 45, 45,
+            2.5, 2.5, 22.5, 22.5,
             start=self.angle, extent=90,
             outline="cyan", width=5, style="arc"
         )
@@ -50,7 +63,6 @@ class MainWindow(ctk.CTk):
         animate()
 
     def stop_circular_loader(self):
-        """Stops the circular loader animation"""
         self.loader_running = False
         self.canvas.delete("all")
     
@@ -59,7 +71,12 @@ class MainWindow(ctk.CTk):
             with open(CONFIG_FILE, "r") as file:
                 self.config = json.load(file)
         else:
-            self.config = {"naming_pattern": "instrumento_#"}
+            self.config = {"project_name": "",
+                           "instrument_labels":{"Acoustic Guitar":"Acoustic Guitar", 
+                                                "Bass":"Bass", 
+                                                "Drums":"Drums", 
+                                                "Electric Guitar":"Electric Guitar", 
+                                                "Piano":"Piano"}}
     
     def save_config(self):
         with open(CONFIG_FILE, "w") as file:
@@ -81,61 +98,110 @@ class MainWindow(ctk.CTk):
         frame_left = ctk.CTkFrame(self.main_tab)
         frame_left.pack(side="left", fill="both", expand=True, padx=10, pady=10)
         
+        btn_select_files = ctk.CTkButton(frame_left, text="Seleccionar Archivos", command=self.select_files)
+        btn_select_files.pack(pady=5)
+
         self.file_list = ctk.CTkTextbox(frame_left, height=200, width=300, state="disabled")
         self.file_list.pack(pady=10)
         
-        btn_select_files = ctk.CTkButton(frame_left, text="Seleccionar Archivos", command=self.select_files)
-        btn_select_files.pack(pady=5)
-        
-        self.btn_clear_files = ctk.CTkButton(frame_left, text="Limpiar Lista", state="disabled", command=self.clear_file_list)
+        self.btn_clear_files = ctk.CTkButton(frame_left, text="Limpiar Lista", command=self.clear_file_list, state="disabled", fg_color="snow4")
         self.btn_clear_files.pack(pady=5)
         
+        # --- FRAME DERECHO ---
         frame_right = ctk.CTkFrame(self.main_tab)
         frame_right.pack(side="right", fill="both", expand=True, padx=10, pady=10)
-        
-        self.destination_label = ctk.CTkLabel(frame_right, text="Destino: No seleccionado", text_color=TEXT_COLOR)
+
+        # --- Sección de destino ---
+        frame_destination = ctk.CTkFrame(frame_right, fg_color="gray20", width=100)
+        frame_destination.pack(fill="x", padx=5, pady=5)
+
+        self.destination_label = ctk.CTkLabel(frame_destination, text="Destino: No seleccionado", text_color="white", font=("Arial", 12, "italic"))
         self.destination_label.pack(pady=5)
-        
-        btn_select_destination = ctk.CTkButton(frame_right, text="Seleccionar Destino", command=self.select_destination)
+
+        btn_select_destination = ctk.CTkButton(frame_destination, text="Seleccionar Destino", command=self.select_destination)
         btn_select_destination.pack(pady=5)
-        
-        self.btn_process = ctk.CTkButton(frame_right, text="Renombrar y Guardar", state="disabled", command=self.start_processing)
-        self.btn_process.pack(pady=5)
-        
-        self.progress_bar = ctk.CTkProgressBar(frame_right, width=250)
+
+        # --- Sección de Nombre del Proyecto ---
+        frame_project = ctk.CTkFrame(frame_right, fg_color="gray20", width=100)
+        frame_project.pack(fill="x", padx=5, pady=10)
+
+        self.project_entry_label = ctk.CTkLabel(frame_project, text="Nombre del Proyecto:")
+        self.project_entry_label.pack(pady=(5, 2))
+        self.project_entry = ctk.CTkEntry(frame_project, width=150)
+        self.project_entry.pack(pady=(2, 10))
+        self.project_entry.bind("<KeyRelease>", lambda event: self.update_filename_preview())
+
+        # --- Sección Final: Procesamiento y progreso ---
+        frame_process = ctk.CTkFrame(frame_right, fg_color="gray20", width=100, height=100)
+        frame_process.pack(fill="both", padx=5, pady=10, side="bottom")
+
+        self.filename_preview_label = ctk.CTkLabel(
+        frame_process, 
+        text="Preview: <instrumento>_1.wav", 
+        font=("Arial", 12, "italic"), 
+        wraplength=200,
+        justify="left")
+        self.filename_preview_label.pack(pady=5)
+
+        self.progress_bar = ctk.CTkProgressBar(frame_process, width=250)
         self.progress_bar.pack(pady=5)
         self.progress_bar.set(0)
-        
-        self.canvas = ctk.CTkCanvas(frame_right, width=50, height=50, highlightthickness=0, bg=self.main_tab._fg_color)
-        self.canvas.pack(pady=5)        
+
+        self.btn_process = ctk.CTkButton(frame_process, text="Renombrar y Guardar", state="disabled", command=self.start_processing, fg_color='navy')
+        self.btn_process.pack(pady=10)
+
+        self.canvas = ctk.CTkCanvas(frame_process, width=25, height=25, highlightthickness=0, bg="gray20")       
         self.canvas.pack()
-    
+
     def create_settings_tab(self):
         frame_settings = ctk.CTkFrame(self.settings_tab)
-        frame_settings.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        self.naming_label = ctk.CTkLabel(frame_settings, text="Formato de nombres:", text_color=TEXT_COLOR)
-        self.naming_label.pack(pady=5)
-        
-        self.naming_entry = ctk.CTkEntry(frame_settings, width=250)
-        self.naming_entry.insert(0, self.config["naming_pattern"])
-        self.naming_entry.pack(pady=5)
-        
+        frame_settings.pack(fill="both", expand=True, padx=10, pady=8)
+
+        self.naming_label = ctk.CTkLabel(frame_settings, text="Ajustar nombres de instrumentos", text_color=TEXT_COLOR)
+        self.naming_label.pack(pady=2)
+
+        self.naming_entries = {}
+
+        for key, label_text in self.config["instrument_labels"].items():
+            frame = ctk.CTkFrame(frame_settings)
+            frame.pack(fill="x", pady=2)
+
+            label = ctk.CTkLabel(frame, text=f"{key}:")
+            label.pack(side="left", padx=3)
+
+            self.entry = ctk.CTkEntry(frame, width=250)
+            self.entry.insert(0, label_text)
+            self.entry.pack(side="right", padx=5)
+            self.naming_entries[key] = self.entry
+
         btn_save_settings = ctk.CTkButton(frame_settings, text="Guardar Configuración", command=self.update_naming_pattern)
         btn_save_settings.pack(pady=5)
-        
+
         btn_reset_settings = ctk.CTkButton(frame_settings, text="Restablecer Configuración", command=self.reset_naming_pattern)
         btn_reset_settings.pack(pady=5)
     
+    def update_filename_preview(self):
+        project_name = self.project_entry.get().strip()
+        filename = f"{project_name}_<instrumento>_1.wav" if project_name else f"<instrumento>_1.wav"
+        self.filename_preview_label.configure(text=f"Preview: {filename}")
+
     def update_naming_pattern(self):
-        self.config["naming_pattern"] = self.naming_entry.get()
-        self.save_config()
-        self.processor.update_config(self.config)
+        for key, entry in self.naming_entries.items():
+            self.config["instrument_labels"][key] = entry.get()
+
+        with open("config.json", "w") as config_file:
+            json.dump(self.config, config_file, indent=4)
     
     def reset_naming_pattern(self):
-        self.config["naming_pattern"] = "instrumento_#"
-        self.naming_entry.delete(0, "end")
-        self.naming_entry.insert(0, self.config["naming_pattern"])
+        self.config = {"instrument_labels":{"Acoustic Guitar":"Acoustic Guitar", 
+                                                "Bass":"Bass", 
+                                                "Drums":"Drums", 
+                                                "Electric Guitar":"Electric Guitar", 
+                                                "Piano":"Piano"}}
+
+        for key, label_text in self.config["instrument_labels"].items():
+            self.entry.insert(0, label_text)
+
         self.save_config()
         self.processor.update_config(self.config)
     
@@ -158,8 +224,11 @@ class MainWindow(ctk.CTk):
             self.btn_clear_files.configure(state="normal")
     
     def clear_file_list(self):
+        self.file_list.configure(state="normal")
         self.file_list.delete("1.0", "end")
+        self.file_list.configure(state="disabled")
         self.file_paths.clear()
+        self.btn_clear_files.configure(state="disabled")
     
     def select_destination(self):
         destination = filedialog.askdirectory()
@@ -183,7 +252,7 @@ class MainWindow(ctk.CTk):
         self.create_circular_loader()
         
         for i, file_path in enumerate(self.file_paths, start=1):
-            new_name = self.processor.process(file_path, self.destination_path)
+            new_name = self.processor.process(file_path, self.destination_path, self.project_entry.get())
             progress = i / total_files
             
             for _ in range(10):
