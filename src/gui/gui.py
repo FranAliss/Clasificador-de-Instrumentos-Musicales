@@ -91,8 +91,8 @@ class MainWindow(ctk.CTk):
         frame_left = ctk.CTkFrame(self.main_tab)
         frame_left.pack(side="left", fill="both", expand=True, padx=10, pady=10)
         
-        btn_select_files = ctk.CTkButton(frame_left, text="Seleccionar Archivos", command=self.select_files)
-        btn_select_files.pack(pady=5)
+        self.btn_select_files = ctk.CTkButton(frame_left, text="Seleccionar Archivos", command=self.select_files)
+        self.btn_select_files.pack(pady=5)
 
         self.file_list = ctk.CTkTextbox(frame_left, height=200, width=300, state="disabled")
         self.file_list.pack(pady=10)
@@ -111,8 +111,8 @@ class MainWindow(ctk.CTk):
         self.destination_label = ctk.CTkLabel(frame_destination, text="Destino: No seleccionado", text_color="white", font=("Arial", 12, "italic"))
         self.destination_label.pack(pady=5)
 
-        btn_select_destination = ctk.CTkButton(frame_destination, text="Seleccionar Destino", command=self.select_destination)
-        btn_select_destination.pack(pady=5)
+        self.btn_select_destination = ctk.CTkButton(frame_destination, text="Seleccionar Destino", command=self.select_destination)
+        self.btn_select_destination.pack(pady=5)
 
         # --- Sección de Nombre del Proyecto ---
         frame_project = ctk.CTkFrame(frame_right, fg_color="gray20", width=100)
@@ -167,11 +167,11 @@ class MainWindow(ctk.CTk):
             self.entry.pack(side="right", padx=5)
             self.naming_entries[key] = self.entry
 
-        btn_save_settings = ctk.CTkButton(frame_settings, text="Guardar Configuración", command=self.update_naming_pattern)
-        btn_save_settings.pack(pady=5)
+        self.btn_save_settings = ctk.CTkButton(frame_settings, text="Guardar Configuración", command=self.update_naming_pattern)
+        self.btn_save_settings.pack(pady=5)
 
-        btn_reset_settings = ctk.CTkButton(frame_settings, text="Restablecer Configuración", command=self.reset_naming_pattern)
-        btn_reset_settings.pack(pady=5)
+        self.btn_reset_settings = ctk.CTkButton(frame_settings, text="Restablecer Configuración", command=self.reset_naming_pattern)
+        self.btn_reset_settings.pack(pady=5)
     
     def update_filename_preview(self):
         project_name = self.project_entry.get().strip()
@@ -311,6 +311,12 @@ class MainWindow(ctk.CTk):
     def process_files(self):
         total_files = len(self.file_paths)
         self.create_circular_loader()
+        self.btn_select_destination.configure(state='disabled')
+        self.btn_select_files.configure(state='disabled')
+        self.btn_reset_settings.configure(state='disabled')
+        self.btn_save_settings.configure(state='disabled')
+        self.btn_clear_files.configure(state='disabled')
+        self.btn_process.configure(state='disabled')
         
         for i, file_path in enumerate(self.file_paths, start=1):
             new_name = self.processor.process(file_path, self.destination_path, self.project_entry.get())
@@ -325,6 +331,13 @@ class MainWindow(ctk.CTk):
         
         self.progress_bar.set(1)
         messagebox.showinfo("Procesamiento", "Proceso completado.")
+
+        self.btn_select_destination.configure(state='normal')
+        self.btn_select_files.configure(state='normal')
+        self.btn_reset_settings.configure(state='normal')
+        self.btn_save_settings.configure(state='normal')
+        self.btn_process.configure(state='normal')
+
         self.file_list.configure(state="normal")
         self.file_list.delete("1.0", "end")
         self.file_list.configure(state="disabled")
