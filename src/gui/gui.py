@@ -29,24 +29,11 @@ class MainWindow(ctk.CTk):
         self.minsize(690, 420)
         self.maxsize(800,500)
         self.configure(bg=PRIMARY_COLOR)
-
         self.file_paths = []
         self.destination_path = None
         self.load_config()
         self.processor = FileProcessor(classifier, self.config)
         self.init_ui()
-        if os.path.exists(CONFIG_FILE):
-            with open(CONFIG_FILE, "r") as file:
-                self.config = json.load(file)
-        else:
-            self.config = {"instrument_labels":
-                                    {"Acoustic Guitar":"Acoustic Guitar", 
-                                    "Bass":"Bass", 
-                                    "Drums":"Drums", 
-                                    "Electric Guitar":"Electric Guitar", 
-                                    "Piano":"Piano"}}
-            with open(CONFIG_FILE, "w") as file:
-                json.dump(self.config, file, indent=4)
 
     def create_circular_loader(self):
         def animate():
@@ -77,12 +64,12 @@ class MainWindow(ctk.CTk):
             with open(CONFIG_FILE, "r") as file:
                 self.config = json.load(file)
         else:
-            self.config = {"project_name": "",
-                           "instrument_labels":{"Acoustic Guitar":"Acoustic Guitar", 
+            self.config = {"instrument_labels":{"Acoustic Guitar":"Acoustic Guitar", 
                                                 "Bass":"Bass", 
                                                 "Drums":"Drums", 
                                                 "Electric Guitar":"Electric Guitar", 
                                                 "Piano":"Piano"}}
+            self.save_config()
     
     def save_config(self):
         with open(CONFIG_FILE, "w") as file:
@@ -195,11 +182,10 @@ class MainWindow(ctk.CTk):
         for key, entry in self.naming_entries.items():
             self.config["instrument_labels"][key] = entry.get()
 
-        with open("config.json", "w") as config_file:
+        with open(CONFIG_FILE, "w") as config_file:
             json.dump(self.config, config_file, indent=4)
     
     def reset_naming_pattern(self):
-        # Restore default config values
         self.config["instrument_labels"] = {
             "Acoustic Guitar": "Acoustic Guitar",
             "Bass": "Bass",
@@ -211,7 +197,6 @@ class MainWindow(ctk.CTk):
             if key in self.naming_entries:
                 self.naming_entries[key].delete(0, "end")
                 self.naming_entries[key].insert(0, label_text)
-        self.save_config()
         self.processor.update_config(self.config)
         self.update_naming_pattern()
 
