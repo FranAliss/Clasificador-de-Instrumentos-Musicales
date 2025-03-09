@@ -1,6 +1,5 @@
 import os
 import re
-import threading
 import time
 import json
 import sys
@@ -317,14 +316,11 @@ class MainWindow(ctk.CTk):
         if not self.file_paths or not self.destination_path:
             messagebox.showwarning("Warning", "Upload files and set a destination folder.")
             return
-        
         self.progress_bar.set(0)
-        self.process_thread = threading.Thread(target=self.process_files)
-        self.process_thread.start()
+        self.process_files()
     
     def process_files(self):
         total_files = len(self.file_paths)
-        self.create_circular_loader()
         # ---------- Deshabilitar botones ----------------
         self.btn_select_destination.configure(state='disabled')
         self.btn_select_files.configure(state='disabled')
@@ -336,15 +332,12 @@ class MainWindow(ctk.CTk):
         
         # --------------- progress bar y model -----------
         for i, file_path in enumerate(self.file_paths, start=1):
-            new_name = self.processor.process(file_path, self.destination_path, self.project_entry.get())
+            self.processor.process(file_path, self.destination_path, self.project_entry.get())
             progress = i / total_files
             
             for _ in range(10):
-                time.sleep(0.1)
+                # time.sleep(0.1)
                 self.progress_bar.set(progress - 0.1 + (_ * 0.01))
-                self.update_idletasks()
-            
-        self.stop_circular_loader()
         
         self.progress_bar.set(1)
         messagebox.showinfo("Processing", "AI processing finished.")

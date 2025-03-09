@@ -26,4 +26,3 @@ class FileProcessor:
 
         new_path = os.path.join(destination, new_file_name + ext)
         shutil.copy(file_path, new_path)
-        return new_file_name + ext
