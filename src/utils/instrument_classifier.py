@@ -10,5 +10,8 @@ class InstrumentClassifier:
     def predict(self, file_path):
         features = AudioPreprocessor.preprocess(file_path)
         features = np.expand_dims(features, axis=0)
-        prediction = self.model.predict(features)
+        try:
+            prediction = self.model.predict(features)
+        except Exception as e:
+            print(f"Prediction error: {e}")
         return self.class_labels[np.argmax(prediction)]

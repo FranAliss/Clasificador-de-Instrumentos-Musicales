@@ -25,9 +25,9 @@ class MainWindow(ctk.CTk):
     def __init__(self, classifier):
         super().__init__()
         self.title("Clasificador de instrumentos musicales")
-        self.geometry("700x430")
-        self.minsize(690, 420)
-        self.maxsize(800,500)
+        self.geometry("700x515")
+        self.minsize(690, 515)
+        self.maxsize(750,580)
         self.configure(bg=PRIMARY_COLOR)
         self.file_paths = []
         self.destination_path = None
@@ -79,25 +79,40 @@ class MainWindow(ctk.CTk):
         self.tabs = ctk.CTkTabview(self, width=680, height=480)
         self.tabs.pack(pady=10, padx=10)
         
-        self.main_tab = self.tabs.add("Principal")
-        self.settings_tab = self.tabs.add("Configuración")
-        self.about_tab = self.tabs.add("Acerca de")
+        self.main_tab = self.tabs.add("Main")
+        self.settings_tab = self.tabs.add("Settings")
+        self.about_tab = self.tabs.add("About")
         
         self.create_main_tab()
         self.create_settings_tab()
         self.create_about_tab()
     
     def create_main_tab(self):
+        if getattr(sys, 'frozen', False):
+            BASE_DIR = sys._MEIPASS
+        else:
+            BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+        ICON_DIR = os.path.join(BASE_DIR, "btn_icons")
+        iconAI = PhotoImage(file=os.path.join(ICON_DIR,"ai.png"))
+        iconAI = iconAI.subsample(16,16)
+        iconUpload = PhotoImage(file=os.path.join(ICON_DIR,"upload.png"))
+        iconUpload = iconUpload.subsample(16,16)
+        iconTrash = PhotoImage(file=os.path.join(ICON_DIR,"delete.png"))
+        iconTrash = iconTrash.subsample(16,16)
+        iconFolder = PhotoImage(file=os.path.join(ICON_DIR,"folder.png"))
+        iconFolder = iconFolder.subsample(18,18)
+
         frame_left = ctk.CTkFrame(self.main_tab)
         frame_left.pack(side="left", fill="both", expand=True, padx=10, pady=10)
         
-        self.btn_select_files = ctk.CTkButton(frame_left, text="Seleccionar Archivos", command=self.select_files)
+        self.btn_select_files = ctk.CTkButton(frame_left, text="Upload Files", command=self.select_files, image=iconUpload, compound="left")
         self.btn_select_files.pack(pady=5)
 
-        self.file_list = ctk.CTkTextbox(frame_left, height=200, width=300, state="disabled")
-        self.file_list.pack(pady=10)
+        self.file_list = ctk.CTkTextbox(frame_left, height=320, width=300, state="disabled")
+        self.file_list.pack(pady=5)
         
-        self.btn_clear_files = ctk.CTkButton(frame_left, text="Limpiar Lista", command=self.clear_file_list, state="disabled", fg_color="snow4")
+        self.btn_clear_files = ctk.CTkButton(frame_left, text="Clean Files", command=self.clear_file_list, state="disabled", fg_color="snow4", image=iconTrash, compound="left")
         self.btn_clear_files.pack(pady=5)
         
         # --- FRAME DERECHO ---
@@ -108,17 +123,15 @@ class MainWindow(ctk.CTk):
         frame_destination = ctk.CTkFrame(frame_right, fg_color="gray20", width=100)
         frame_destination.pack(fill="x", padx=5, pady=5)
 
-        self.destination_label = ctk.CTkLabel(frame_destination, text="Destino: No seleccionado", text_color="white", font=("Arial", 12, "italic"))
-        self.destination_label.pack(pady=5)
-
-        self.btn_select_destination = ctk.CTkButton(frame_destination, text="Seleccionar Destino", command=self.select_destination)
+        self.btn_select_destination = ctk.CTkButton(frame_destination, text="Pick Destination", command=self.select_destination, image=iconFolder, compound="left")
         self.btn_select_destination.pack(pady=5)
+        self.destination_label = ctk.CTkLabel(frame_destination, text="", text_color="white", font=("Arial", 12, "italic"))
 
         # --- Sección de Nombre del Proyecto ---
         frame_project = ctk.CTkFrame(frame_right, fg_color="gray20", width=100)
-        frame_project.pack(fill="x", padx=5, pady=10)
+        frame_project.pack(fill="both", padx=5, pady=10)
 
-        self.project_entry_label = ctk.CTkLabel(frame_project, text="Nombre del Proyecto:")
+        self.project_entry_label = ctk.CTkLabel(frame_project, text="Prefix (Song name):")
         self.project_entry_label.pack(pady=(5, 2))
         self.project_entry = ctk.CTkEntry(frame_project, width=150)
         self.project_entry.pack(pady=(2, 10))
@@ -129,8 +142,8 @@ class MainWindow(ctk.CTk):
         frame_process.pack(fill="both", padx=5, pady=10, side="bottom")
 
         self.filename_preview_label = ctk.CTkLabel(
-        frame_process, 
-        text="Preview: <instrumento>_1.wav", 
+        frame_project, 
+        text="Preview: <instrument>_1.wav", 
         font=("Arial", 12, "italic"), 
         wraplength=200,
         justify="left")
@@ -140,7 +153,8 @@ class MainWindow(ctk.CTk):
         self.progress_bar.pack(pady=5)
         self.progress_bar.set(0)
 
-        self.btn_process = ctk.CTkButton(frame_process, text="Renombrar y Guardar", state="disabled", command=self.start_processing, fg_color='navy')
+        self.btn_process = ctk.CTkButton(frame_process, text="AI Classify", state="disabled", 
+                                        command=self.start_processing, fg_color='navy', image=iconAI, compound="left")
         self.btn_process.pack(pady=10)
 
         self.canvas = ctk.CTkCanvas(frame_process, width=25, height=25, highlightthickness=0, bg="gray20")       
@@ -150,7 +164,7 @@ class MainWindow(ctk.CTk):
         frame_settings = ctk.CTkFrame(self.settings_tab)
         frame_settings.pack(fill="both", expand=True, padx=10, pady=8)
 
-        self.naming_label = ctk.CTkLabel(frame_settings, text="Ajustar nombres de instrumentos", text_color=TEXT_COLOR)
+        self.naming_label = ctk.CTkLabel(frame_settings, text="Change instrument tags", text_color=TEXT_COLOR)
         self.naming_label.pack(pady=2)
 
         self.naming_entries = {}
@@ -167,10 +181,10 @@ class MainWindow(ctk.CTk):
             self.entry.pack(side="right", padx=5)
             self.naming_entries[key] = self.entry
 
-        self.btn_save_settings = ctk.CTkButton(frame_settings, text="Guardar Configuración", command=self.update_naming_pattern)
+        self.btn_save_settings = ctk.CTkButton(frame_settings, text="Save Settings", command=self.update_naming_pattern)
         self.btn_save_settings.pack(pady=5)
 
-        self.btn_reset_settings = ctk.CTkButton(frame_settings, text="Restablecer Configuración", command=self.reset_naming_pattern)
+        self.btn_reset_settings = ctk.CTkButton(frame_settings, text="Reset Settings", command=self.reset_naming_pattern)
         self.btn_reset_settings.pack(pady=5)
     
     def update_filename_preview(self):
@@ -215,7 +229,6 @@ class MainWindow(ctk.CTk):
             BASE_DIR = sys._MEIPASS
         else:
             BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
         IMG_DIR = os.path.join(BASE_DIR, "img")
 
         tutorial_steps = [
@@ -295,13 +308,14 @@ class MainWindow(ctk.CTk):
         destination = filedialog.askdirectory()
         if destination:
             short_path = re.split(r'[/\\]', destination)[-1]
-            self.destination_label.configure(text=f"Destino: {short_path}")
+            self.destination_label.configure(text=f"Destination: {short_path}")
+            self.destination_label.pack(pady=3)
             self.destination_path = destination
             self.btn_process.configure(state="normal")
     
     def start_processing(self):
         if not self.file_paths or not self.destination_path:
-            messagebox.showwarning("Advertencia", "No hay archivos seleccionados.")
+            messagebox.showwarning("Warning", "Upload files and set a destination folder.")
             return
         
         self.progress_bar.set(0)
@@ -311,13 +325,16 @@ class MainWindow(ctk.CTk):
     def process_files(self):
         total_files = len(self.file_paths)
         self.create_circular_loader()
+        # ---------- Deshabilitar botones ----------------
         self.btn_select_destination.configure(state='disabled')
         self.btn_select_files.configure(state='disabled')
         self.btn_reset_settings.configure(state='disabled')
         self.btn_save_settings.configure(state='disabled')
         self.btn_clear_files.configure(state='disabled')
         self.btn_process.configure(state='disabled')
+        # -----------------------------------------------
         
+        # --------------- progress bar y model -----------
         for i, file_path in enumerate(self.file_paths, start=1):
             new_name = self.processor.process(file_path, self.destination_path, self.project_entry.get())
             progress = i / total_files
@@ -330,13 +347,15 @@ class MainWindow(ctk.CTk):
         self.stop_circular_loader()
         
         self.progress_bar.set(1)
-        messagebox.showinfo("Procesamiento", "Proceso completado.")
+        messagebox.showinfo("Processing", "AI processing finished.")
 
+        # ------------ Habilitar botones -------------------------
         self.btn_select_destination.configure(state='normal')
         self.btn_select_files.configure(state='normal')
         self.btn_reset_settings.configure(state='normal')
         self.btn_save_settings.configure(state='normal')
         self.btn_process.configure(state='normal')
+        # --------------------------------------------------------
 
         self.file_list.configure(state="normal")
         self.file_list.delete("1.0", "end")

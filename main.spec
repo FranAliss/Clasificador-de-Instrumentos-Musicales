@@ -5,7 +5,7 @@ a = Analysis(
     ['C:\\Users\\Fran\\Desktop\\Fran\\Programacion\\Universidad\\10mo semestre\\Tesis\\dev\\InstrumentClassifier\\src\\main.py'],
     pathex=[],
     binaries=[],
-    datas=[('C:\\Users\\Fran\\Desktop\\Fran\\Programacion\\Universidad\\10mo semestre\\Tesis\\dev\\InstrumentClassifier\\src\\gui\\img', 'img/'), ('C:\\Users\\Fran\\Desktop\\Fran\\Programacion\\Universidad\\10mo semestre\\Tesis\\dev\\InstrumentClassifier\\models\\instrument_classifier_bayesian_2.keras', '.'), ('C:\\Users\\Fran\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\customtkinter', 'customtkinter/'), ('C:\\Users\\Fran\\Desktop\\Fran\\Programacion\\Universidad\\10mo semestre\\Tesis\\dev\\InstrumentClassifier\\guitar_28109.ico', '.')],
+    datas=[('C:\\Users\\Fran\\Desktop\\Fran\\Programacion\\Universidad\\10mo semestre\\Tesis\\dev\\InstrumentClassifier\\src\\gui\\img', 'img/'), ('C:\\Users\\Fran\\Desktop\\Fran\\Programacion\\Universidad\\10mo semestre\\Tesis\\dev\\InstrumentClassifier\\models', 'models/'), ('C:\\Users\\Fran\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages\\customtkinter', 'customtkinter/'), ('C:\\Users\\Fran\\Desktop\\Fran\\Programacion\\Universidad\\10mo semestre\\Tesis\\dev\\InstrumentClassifier\\guitar_28109.ico', '.')],
     hiddenimports=['tensorflow', 'keras'],
     hookspath=[],
     hooksconfig={},
