@@ -8,7 +8,7 @@ if getattr(sys, 'frozen', False):
 else:
     base_path = os.path.abspath(".")
 
-MODEL_PATH = os.path.join(base_path, "models", "instrument_classifier_bayesian_4.keras")
+MODEL_PATH = os.path.join(base_path, "models", "inst_classifier_bysian_2.onnx")
 CLASS_LABELS = ["Acoustic Guitar", "Bass", "Drums", "Electric Guitar", "Piano"]
 ICON_PATH = os.path.join(base_path, "guitar_28109.ico")
 

@@ -1,6 +1,7 @@
 import os
 import re
 import time
+import threading
 import json
 import sys
 import customtkinter as ctk
@@ -317,7 +318,8 @@ class MainWindow(ctk.CTk):
             messagebox.showwarning("Warning", "Upload files and set a destination folder.")
             return
         self.progress_bar.set(0)
-        self.process_files()
+        self.process_thread = threading.Thread(target=self.process_files)
+        self.process_thread.start()
     
     def process_files(self):
         total_files = len(self.file_paths)
@@ -329,7 +331,7 @@ class MainWindow(ctk.CTk):
         self.btn_clear_files.configure(state='disabled')
         self.btn_process.configure(state='disabled')
         # -----------------------------------------------
-        
+        self.create_circular_loader()
         # --------------- progress bar y model -----------
         for i, file_path in enumerate(self.file_paths, start=1):
             self.processor.process(file_path, self.destination_path, self.project_entry.get())
@@ -339,6 +341,7 @@ class MainWindow(ctk.CTk):
                 # time.sleep(0.1)
                 self.progress_bar.set(progress - 0.1 + (_ * 0.01))
         
+        self.stop_circular_loader()
         self.progress_bar.set(1)
         messagebox.showinfo("Processing", "AI processing finished.")
 
