@@ -163,8 +163,8 @@ class MainWindow(ctk.CTk):
         frame_left = ctk.CTkFrame(self.main_tab, border_width=2, border_color="LightSkyBlue4")
         frame_left.pack(side="left", fill="both", expand=True, padx=5, pady=10)
 
-        label_top = ctk.CTkLabel(frame_left, text="1. Selecciona los archivos", font=("@MicrosoftJhengHeiUI", 16, "bold"))
-        label_top.pack(pady=5, padx=5, fill="x")
+        label_top_left = ctk.CTkLabel(frame_left, text="1. Selecciona los archivos", font=("@MicrosoftJhengHeiUI", 20))
+        label_top_left.pack(pady=5, padx=5, fill="x")
 
         self.file_scroll_frame = ctk.CTkScrollableFrame(frame_left, width=300, height=320, border_width=0.5, border_color="LightSkyBlue4")
         self.file_scroll_frame.pack(pady=5,padx=8, fill="both", expand=True)
@@ -177,6 +177,9 @@ class MainWindow(ctk.CTk):
 
         frame_right = ctk.CTkFrame(self.main_tab, border_width=2, border_color="LightSkyBlue4")
         frame_right.pack(side="right", fill="both", expand=True, padx=5, pady=10)
+        
+        label_top_right = ctk.CTkLabel(frame_right, text="2. Selecciona el destino", font=("@MicrosoftJhengHeiUI", 20))
+        label_top_right.pack(pady=5, padx=5, fill="x")
 
         frame_destination = ctk.CTkFrame(frame_right, fg_color="gray20", width=100, border_width=0.5, border_color="LightSkyBlue4")
         frame_destination.pack(fill="x", padx=10, pady=5)
@@ -193,6 +196,9 @@ class MainWindow(ctk.CTk):
         self.project_entry = ctk.CTkEntry(frame_project, width=150)
         self.project_entry.pack(pady=(2, 10))
         self.project_entry.bind("<KeyRelease>", lambda event: self.update_filename_preview())
+
+        label_bottom_right = ctk.CTkLabel(frame_right, text="3. Clasifica los archivos", font=("@MicrosoftJhengHeiUI", 20))
+        label_bottom_right.pack(pady=5, padx=5, fill="x")
 
         frame_process = ctk.CTkFrame(frame_right, fg_color="gray20", width=100, height=100, border_width=0.5, border_color="LightSkyBlue4")
         frame_process.pack(fill="both", padx=10, pady=10, side="bottom")
