@@ -1,0 +1,19 @@
+# Colores principales
+- Fondo principal: #0f172a (bg-gray-900)
+- Fondo de tarjetas: #1e293b (bg-gray-800)
+- Fondo de elementos: #111827 (bg-gray-900)
+- Bordes: #334155 (border-gray-700)
+
+# Colores de acento
+- Azul principal: #2563eb (bg-blue-600)
+- Azul hover: #1d4ed8 (bg-blue-700)
+- Púrpura (botón IA): #6b21a8 (bg-purple-800)
+- Púrpura hover: #7e22ce (bg-purple-700)
+- Rojo (botón limpiar): #b91c1c (bg-red-700)
+- Rojo hover: #991b1b (bg-red-800)
+
+# Colores de texto
+- Texto principal: #ffffff (text-white)
+- Texto secundario: #94a3b8 (text-gray-400)
+- Texto desactivado: #64748b (text-gray-500)
+- Iconos de archivos: #60a5fa (text-blue-400)

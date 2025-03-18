@@ -1,6 +1,7 @@
 import os
 import re
 import time
+from pygame import mixer
 import threading
 import json
 import sys
@@ -8,6 +9,8 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox, PhotoImage
 from utils.file_processor import FileProcessor
 from PIL import Image
+from playsound import playsound
+from tkinterdnd2 import DND_FILES
 
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
@@ -25,8 +28,8 @@ class MainWindow(ctk.CTk):
     def __init__(self, classifier):
         super().__init__()
         self.title("Clasificador de instrumentos musicales")
-        self.geometry("700x515")
-        self.minsize(690, 515)
+        self.geometry("740x525")
+        self.minsize(710, 525)
         self.maxsize(750,580)
         self.configure(bg=PRIMARY_COLOR)
         self.file_paths = []
@@ -34,6 +37,8 @@ class MainWindow(ctk.CTk):
         self.load_config()
         self.processor = FileProcessor(classifier, self.config)
         self.init_ui()
+        mixer.init()
+        self.mark = 0
 
     def create_circular_loader(self):
         def animate():
@@ -76,8 +81,8 @@ class MainWindow(ctk.CTk):
             json.dump(self.config, file)
     
     def init_ui(self):
-        self.tabs = ctk.CTkTabview(self, width=680, height=480)
-        self.tabs.pack(pady=10, padx=10)
+        self.tabs = ctk.CTkTabview(self, width=680, height=515)
+        self.tabs.pack(pady=10, padx=10, fill="both")
         
         self.main_tab = self.tabs.add("Main")
         self.settings_tab = self.tabs.add("Settings")
@@ -87,6 +92,58 @@ class MainWindow(ctk.CTk):
         self.create_settings_tab()
         self.create_about_tab()
     
+    def add_file_to_ui(self, file_path):
+        file_frame = ctk.CTkFrame(self.file_scroll_frame)
+        file_frame.pack(fill="x", pady=2, padx=2)
+
+        file_label = ctk.CTkLabel(file_frame, text=os.path.basename(file_path), anchor="w", width=150, wraplength=195)
+        file_label.pack(side="left", padx=(5, 0))
+
+        delete_button = ctk.CTkButton(file_frame, text="", image=self.iconDelete, width=5, fg_color="transparent",hover_color="black",
+                                    command=lambda: self.delete_file_entry(file_frame, file_path))
+        delete_button.pack(side="right", padx=1)
+        
+        forward_button = ctk.CTkButton(file_frame, text="", image=self.iconForward, width=5, fg_color="transparent",hover_color="black",
+                                    command=lambda: self.skip_30s())
+        forward_button.pack(side="right", padx=1)
+
+        play_button = ctk.CTkButton(file_frame, text="", image=self.iconPlay, width=5, fg_color="transparent", hover_color="black",
+                                    command=lambda: self.toggle_audio(play_button, file_path))
+        play_button.pack(side="right", padx=1)
+
+    def toggle_audio(self, play_button, file_path):
+        if mixer.music.get_busy():
+            self.stop_audio()
+            play_button.configure(image=self.iconPlay, command=lambda: self.toggle_audio(play_button, file_path))
+        else:
+            self.play_audio(file_path)
+            play_button.configure(image=self.iconStop, command=lambda: self.toggle_audio(play_button, file_path))
+
+    def play_audio(self, file_path):
+        if not mixer.music.get_busy():
+            mixer.music.load(file_path)
+            mixer.music.play()
+            self.mark = 0
+        else:
+            self.stop_audio()
+            mixer.music.load(file_path)
+            mixer.music.play()
+            self.mark = 0
+
+    def stop_audio(self):
+        if mixer.music.get_busy():
+            mixer.music.stop()
+
+    def skip_30s(self):
+        if mixer.music.get_busy():
+            mixer.music.set_pos(self.mark)
+            self.mark = self.mark + 20
+
+    def delete_file_entry(self, frame, file_path):
+        frame.destroy()
+        self.file_paths.remove(file_path)
+        self.stop_audio()
+
     def create_main_tab(self):
         if getattr(sys, 'frozen', False):
             BASE_DIR = sys._MEIPASS
@@ -94,42 +151,42 @@ class MainWindow(ctk.CTk):
             BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
         ICON_DIR = os.path.join(BASE_DIR, "btn_icons")
-        iconAI = PhotoImage(file=os.path.join(ICON_DIR,"ai.png"))
-        iconAI = iconAI.subsample(16,16)
-        iconUpload = PhotoImage(file=os.path.join(ICON_DIR,"upload.png"))
-        iconUpload = iconUpload.subsample(16,16)
-        iconTrash = PhotoImage(file=os.path.join(ICON_DIR,"delete.png"))
-        iconTrash = iconTrash.subsample(16,16)
-        iconFolder = PhotoImage(file=os.path.join(ICON_DIR,"folder.png"))
-        iconFolder = iconFolder.subsample(18,18)
+        iconAI = PhotoImage(file=os.path.join(ICON_DIR, "ai.png")).subsample(16, 16)
+        iconUpload = PhotoImage(file=os.path.join(ICON_DIR, "upload.png")).subsample(16, 16)
+        iconTrash = PhotoImage(file=os.path.join(ICON_DIR, "delete.png")).subsample(24, 24)
+        iconFolder = PhotoImage(file=os.path.join(ICON_DIR, "folder.png")).subsample(18, 18)
+        iconPlay = PhotoImage(file=os.path.join(ICON_DIR, "play.png")).subsample(24, 24)
+        iconStop = PhotoImage(file=os.path.join(ICON_DIR, "stop.png")).subsample(30, 30)
+        iconForward = PhotoImage(file=os.path.join(ICON_DIR, "forward.png")).subsample(32, 32)
+        iconDelete = PhotoImage(file=os.path.join(ICON_DIR, "delete_small.png")).subsample(32, 32)
 
-        frame_left = ctk.CTkFrame(self.main_tab)
-        frame_left.pack(side="left", fill="both", expand=True, padx=10, pady=10)
-        
-        self.btn_select_files = ctk.CTkButton(frame_left, text="Upload Files", command=self.select_files, image=iconUpload, compound="left")
-        self.btn_select_files.pack(pady=5)
+        frame_left = ctk.CTkFrame(self.main_tab, border_width=2, border_color="LightSkyBlue4")
+        frame_left.pack(side="left", fill="both", expand=True, padx=5, pady=10)
 
-        self.file_list = ctk.CTkTextbox(frame_left, height=320, width=300, state="disabled")
-        self.file_list.pack(pady=5)
-        
-        self.btn_clear_files = ctk.CTkButton(frame_left, text="Clean Files", command=self.clear_file_list, state="disabled", fg_color="snow4", image=iconTrash, compound="left")
-        self.btn_clear_files.pack(pady=5)
-        
-        # --- FRAME DERECHO ---
-        frame_right = ctk.CTkFrame(self.main_tab)
-        frame_right.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+        label_top = ctk.CTkLabel(frame_left, text="1. Selecciona los archivos", font=("@MicrosoftJhengHeiUI", 16, "bold"))
+        label_top.pack(pady=5, padx=5, fill="x")
 
-        # --- Sección de destino ---
-        frame_destination = ctk.CTkFrame(frame_right, fg_color="gray20", width=100)
-        frame_destination.pack(fill="x", padx=5, pady=5)
+        self.file_scroll_frame = ctk.CTkScrollableFrame(frame_left, width=300, height=320, border_width=0.5, border_color="LightSkyBlue4")
+        self.file_scroll_frame.pack(pady=5,padx=8, fill="both", expand=True)
 
-        self.btn_select_destination = ctk.CTkButton(frame_destination, text="Pick Destination", command=self.select_destination, image=iconFolder, compound="left")
+        self.btn_select_files = ctk.CTkButton(frame_left, text="Upload Files",font=("@MicrosoftJhengHeiUI",14), command=self.select_files, image=iconUpload, compound="left")
+        self.btn_select_files.pack(pady=5, padx=5, side="left")
+
+        self.btn_clear_files = ctk.CTkButton(frame_left, text="Clean Files", text_color="gray1", font=("@MicrosoftJhengHeiUI",14),command=self.clear_file_list, state="disabled", fg_color="snow4", image=iconTrash, compound="left")
+        self.btn_clear_files.pack(pady=5, padx=5, side="right")
+
+        frame_right = ctk.CTkFrame(self.main_tab, border_width=2, border_color="LightSkyBlue4")
+        frame_right.pack(side="right", fill="both", expand=True, padx=5, pady=10)
+
+        frame_destination = ctk.CTkFrame(frame_right, fg_color="gray20", width=100, border_width=0.5, border_color="LightSkyBlue4")
+        frame_destination.pack(fill="x", padx=10, pady=5)
+
+        self.btn_select_destination = ctk.CTkButton(frame_destination, text="Pick Destination",font=("@MicrosoftJhengHeiUI",14), command=self.select_destination, image=iconFolder, compound="left")
         self.btn_select_destination.pack(pady=5)
-        self.destination_label = ctk.CTkLabel(frame_destination, text="", text_color="white", font=("Arial", 12, "italic"))
+        self.destination_label = ctk.CTkLabel(frame_destination, text="", text_color="white", font=("@MicrosoftJhengHeiUI", 12, "italic"))
 
-        # --- Sección de Nombre del Proyecto ---
-        frame_project = ctk.CTkFrame(frame_right, fg_color="gray20", width=100)
-        frame_project.pack(fill="both", padx=5, pady=10)
+        frame_project = ctk.CTkFrame(frame_right, fg_color="gray20", width=100, border_width=0.5, border_color="LightSkyBlue4")
+        frame_project.pack(fill="both", padx=10, pady=10)
 
         self.project_entry_label = ctk.CTkLabel(frame_project, text="Prefix (Song name):")
         self.project_entry_label.pack(pady=(5, 2))
@@ -137,28 +194,32 @@ class MainWindow(ctk.CTk):
         self.project_entry.pack(pady=(2, 10))
         self.project_entry.bind("<KeyRelease>", lambda event: self.update_filename_preview())
 
-        # --- Sección Final: Procesamiento y progreso ---
-        frame_process = ctk.CTkFrame(frame_right, fg_color="gray20", width=100, height=100)
-        frame_process.pack(fill="both", padx=5, pady=10, side="bottom")
+        frame_process = ctk.CTkFrame(frame_right, fg_color="gray20", width=100, height=100, border_width=0.5, border_color="LightSkyBlue4")
+        frame_process.pack(fill="both", padx=10, pady=10, side="bottom")
 
         self.filename_preview_label = ctk.CTkLabel(
-        frame_project, 
-        text="Preview: <instrument>_1.wav", 
-        font=("Arial", 12, "italic"), 
-        wraplength=200,
-        justify="left")
+            frame_project,
+            text="Preview: <instrument>_1.wav",
+            font=("@MicrosoftJhengHeiUI", 12, "italic"),
+            wraplength=200,
+            justify="left")
         self.filename_preview_label.pack(pady=5)
 
         self.progress_bar = ctk.CTkProgressBar(frame_process, width=250)
         self.progress_bar.pack(pady=5)
         self.progress_bar.set(0)
 
-        self.btn_process = ctk.CTkButton(frame_process, text="AI Classify", state="disabled", 
-                                        command=self.start_processing, fg_color='navy', image=iconAI, compound="left")
+        self.btn_process = ctk.CTkButton(frame_process, text="AI Classify", font=("@MicrosoftJhengHeiUI",18, "bold"), state="disabled", height=80, width=220, 
+                                        command=self.start_processing, fg_color='cyan3', image=iconAI, compound="left")
         self.btn_process.pack(pady=10)
 
         self.canvas = ctk.CTkCanvas(frame_process, width=25, height=25, highlightthickness=0, bg="gray20")       
         self.canvas.pack()
+
+        self.iconPlay = iconPlay
+        self.iconStop = iconStop
+        self.iconForward = iconForward
+        self.iconDelete = iconDelete
 
     def create_settings_tab(self):
         frame_settings = ctk.CTkFrame(self.settings_tab)
@@ -292,16 +353,10 @@ class MainWindow(ctk.CTk):
         files = filedialog.askopenfilenames(filetypes=[("Archivos WAV", "*.wav")])
         if files:
             self.file_paths.extend(files)
-            self.file_list.configure(state="normal")
-            self.file_list.insert("end", "\n".join(os.path.basename(f) for f in files) + "\n")
-            self.file_list.configure(state="disabled")
-            self.btn_clear_files.configure(state="normal")
+            for file in files:
+                self.add_file_to_ui(file) 
     
     def clear_file_list(self):
-        self.file_list.configure(state="normal")
-        self.file_list.delete("1.0", "end")
-        self.file_list.configure(state="disabled")
-        self.file_paths.clear()
         self.btn_clear_files.configure(state="disabled")
     
     def select_destination(self):
@@ -353,9 +408,9 @@ class MainWindow(ctk.CTk):
         self.btn_process.configure(state='normal')
         # --------------------------------------------------------
 
-        self.file_list.configure(state="normal")
-        self.file_list.delete("1.0", "end")
-        self.file_list.configure(state="disabled")
+        # self.file_list.configure(state="normal")
+        # self.file_list.delete("1.0", "end")
+        # self.file_list.configure(state="disabled")
         self.file_paths.clear()
         os.startfile(self.destination_path)
         self.progress_bar.set(0)
